@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creative Ops Dashboard — Adda247</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0b0d;--bg2:#111316;--bg3:#1a1d22;--bg4:#22262d;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);
+  --text:#eeecea;--muted:#6b6e72;--muted2:#9a9c9f;
+  --green:#00e5a0;--green-dim:rgba(0,229,160,0.1);--green-glow:rgba(0,229,160,0.25);
+  --blue:#3d9bff;--blue-dim:rgba(61,155,255,0.1);
+  --amber:#ffb347;--amber-dim:rgba(255,179,71,0.1);
+  --red:#ff4f4f;--red-dim:rgba(255,79,79,0.1);
+  --purple:#b57bee;--purple-dim:rgba(181,123,238,0.1);
+  --teal:#00cfc8;--teal-dim:rgba(0,207,200,0.1);
+  --font:'Syne',sans-serif;--mono:'DM Mono',monospace;
+  --radius:10px;--radius-lg:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;font-size:14px;overflow-x:hidden}
+
+/* LOADER */
+#loader{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:20px;transition:opacity .4s}
+#loader.hide{opacity:0;pointer-events:none}
+.ld-logo{font-size:26px;font-weight:700;letter-spacing:-1px}
+.ld-logo em{color:var(--green);font-style:normal}
+.ld-bar{width:220px;height:2px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.ld-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--teal));border-radius:2px;animation:ldFill 2.2s ease forwards}
+@keyframes ldFill{from{width:0}to{width:100%}}
+.ld-msg{font-size:12px;color:var(--muted);font-family:var(--mono)}
+
+/* SHELL */
+.shell{display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:230px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);padding:28px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.sb-logo{padding:0 22px 24px;border-bottom:1px solid var(--border);margin-bottom:24px}
+.sb-logo-text{font-size:18px;font-weight:700;letter-spacing:-0.5px}
+.sb-logo-text em{color:var(--green);font-style:normal}
+.sb-logo-sub{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:1px;font-family:var(--mono)}
+.sb-section{padding:0 22px;margin-bottom:6px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 22px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-left:2px solid transparent;transition:all .15s;margin-bottom:2px}
+.nav-item.active{color:var(--text);border-left-color:var(--green);background:var(--green-dim)}
+.nav-item:hover:not(.active){color:var(--muted2);background:var(--bg3)}
+.nav-icon{width:16px;height:16px;opacity:.7;flex-shrink:0}
+.sb-bottom{margin-top:auto;padding:20px 22px;border-top:1px solid var(--border)}
+.sync-btn{width:100%;padding:10px;background:var(--green-dim);color:var(--green);border:1px solid rgba(0,229,160,0.2);border-radius:var(--radius);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s;letter-spacing:0.3px}
+.sync-btn:hover{background:var(--green-glow)}
+.sync-btn.busy{opacity:.5;cursor:not-allowed}
+#lastSync{font-size:10px;color:var(--muted);text-align:center;margin-top:8px;font-family:var(--mono)}
+
+/* MAIN */
+.main{flex:1;min-width:0}
+.topbar{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(10,11,13,0.85);position:sticky;top:0;z-index:100;backdrop-filter:blur(16px)}
+.topbar-left h1{font-size:20px;font-weight:700;letter-spacing:-0.5px}
+.topbar-left p{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.date-chip{font-size:11px;color:var(--muted2);background:var(--bg3);padding:6px 14px;border-radius:20px;border:1px solid var(--border);font-family:var(--mono)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green-glow);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ERROR */
+.err-banner{display:none;margin:16px 28px 0;padding:12px 16px;background:var(--red-dim);border:1px solid rgba(255,79,79,0.25);border-radius:var(--radius);font-size:13px;color:var(--red);line-height:1.5}
+
+/* CONTENT */
+.content{padding:24px 28px}
+
+/* FILTERS */
+.filter-bar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.filter-bar select{background:var(--bg2);color:var(--text);border:1px solid var(--border2);padding:8px 14px;border-radius:var(--radius);font-family:var(--font);font-size:12px;cursor:pointer;min-width:130px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6e72'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.filter-bar select:focus{outline:none;border-color:var(--green)}
+.reset-btn{padding:8px 16px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font);font-size:12px;cursor:pointer;transition:all .15s}
+.reset-btn:hover{color:var(--text);border-color:var(--border2)}
+.filter-count{margin-left:auto;font-size:11px;color:var(--muted);font-family:var(--mono)}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 16px;position:relative;overflow:hidden;transition:border-color .2s}
+.kpi:hover{border-color:var(--border2)}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0}
+.kpi.k-total::after{background:var(--blue)}
+.kpi.k-done::after{background:var(--green)}
+.kpi.k-wip::after{background:var(--amber)}
+.kpi.k-urgent::after{background:var(--purple)}
+.kpi.k-creatives::after{background:var(--teal)}
+.kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:600}
+.kpi-val{font-size:30px;font-weight:700;letter-spacing:-1.5px;line-height:1;font-family:var(--mono)}
+.kpi.k-total .kpi-val{color:var(--blue)}
+.kpi.k-done .kpi-val{color:var(--green)}
+.kpi.k-wip .kpi-val{color:var(--amber)}
+.kpi.k-urgent .kpi-val{color:var(--purple)}
+.kpi.k-creatives .kpi-val{color:var(--teal)}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:6px}
+
+/* CHARTS */
+.charts-row{display:grid;grid-template-columns:1.8fr 1fr;gap:12px;margin-bottom:16px}
+.charts-row2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:12px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px}
+.chart-wrap{position:relative}
+.leg{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted2)}
+.leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* TOP PERFORMER */
+.perf-grid{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px}
+.top-card{background:var(--bg2);border:1px solid rgba(0,229,160,0.2);border-radius:var(--radius-lg);padding:20px;position:relative;overflow:hidden}
+.top-card::before{content:'';position:absolute;top:-40px;right:-40px;width:120px;height:120px;background:var(--green-dim);border-radius:50%;filter:blur(30px)}
+.top-badge{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--green);font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.top-badge::before{content:'★';font-size:11px}
+.top-avatar{width:50px;height:50px;border-radius:12px;background:var(--green-dim);border:2px solid rgba(0,229,160,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:var(--green);flex-shrink:0}
+.stat-r{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.stat-r:last-child{border-bottom:none}
+.stat-r .sl{font-size:11px;color:var(--muted)}
+.stat-r .sv{font-size:12px;font-weight:600;font-family:var(--mono)}
+
+/* TABLE */
+.tbl-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.tbl-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.tbl-head-title{font-size:14px;font-weight:700}
+.tbl-count{font-size:11px;color:var(--muted);background:var(--bg3);padding:4px 12px;border-radius:20px;border:1px solid var(--border);font-family:var(--mono)}
+.tbl-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:900px}
+th{padding:9px 14px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);background:var(--bg3);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:11px 14px;font-size:12px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
+.urgent-row td:first-child{border-left:2px solid var(--red)}
+.tat-row td:first-child{border-left:2px solid var(--amber)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;letter-spacing:.2px}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.badge.Completed,.badge.Done{background:var(--green-dim);color:var(--green)}
+.badge.Pending{background:var(--amber-dim);color:var(--amber)}
+.badge.In-Progress,.badge.WIP{background:var(--blue-dim);color:var(--blue)}
+.badge.Urgent{background:var(--purple-dim);color:var(--purple)}
+.badge.Rejected{background:var(--red-dim);color:var(--red)}
+.late-pill{font-size:10px;color:var(--red);background:var(--red-dim);padding:2px 8px;border-radius:10px;font-family:var(--mono)}
+.ok-pill{font-size:10px;color:var(--green);background:var(--green-dim);padding:2px 8px;border-radius:10px;font-family:var(--mono)}
+.warn-pill{font-size:10px;color:var(--amber);background:var(--amber-dim);padding:2px 8px;border-radius:10px;font-family:var(--mono)}
+
+/* EMPTY */
+.empty-row td{text-align:center;padding:48px;color:var(--muted)}
+
+/* TRUNCATE */
+.trunc{max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:800px){.sidebar{display:none}.charts-row,.charts-row2,.perf-grid{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(2,1fr)}.content{padding:16px}}
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="ld-logo">Creative<em>Ops</em></div>
+  <div class="ld-bar"><div class="ld-fill"></div></div>
+  <div class="ld-msg" id="ldMsg">Connecting to Google Sheets…</div>
+</div>
+
+<div class="shell" id="app" style="display:none">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-text">Creative<em>Ops</em></div>
+      <div class="sb-logo-sub">Adda247 Design</div>
+    </div>
+    <div class="sb-section" style="margin-bottom:12px">Menu</div>
+    <div class="nav-item active">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      All Requests
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      Designers
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3zM3 10h18v4H3zM3 17h18v4H3z"/></svg>
+      Channels
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      Reports
+    </div>
+    <div class="sb-bottom">
+      <button class="sync-btn" id="syncBtn" onclick="loadData()">
+        <span id="syncIcon">↻</span> Sync Sheet
+      </button>
+      <div id="lastSync">Never synced</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>Creative Ops Dashboard</h1>
+        <p id="dateLabel"></p>
+      </div>
+      <div class="topbar-right">
+        <div class="live-dot"></div>
+        <div class="date-chip" id="totalChip">— requests</div>
+      </div>
+    </div>
+
+    <div class="err-banner" id="errBanner"></div>
+
+    <div class="content">
+
+      <!-- FILTERS -->
+      <div class="filter-bar">
+        <select id="fDesigner"><option value="">All Designers</option></select>
+        <select id="fChannel"><option value="">All Channels</option></select>
+        <select id="fType"><option value="">All Creative Types</option></select>
+        <select id="fStatus"><option value="">All Statuses</option></select>
+        <select id="fPeriod">
+          <option value="all">All Time</option>
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month" selected>This Month</option>
+        </select>
+        <button class="reset-btn" onclick="resetFilters()">✕ Reset</button>
+        <div class="filter-count" id="filterCount"></div>
+      </div>
+
+      <!-- KPI -->
+      <div class="kpi-grid">
+        <div class="kpi k-total">
+          <div class="kpi-label">Total Requests</div>
+          <div class="kpi-val" id="kTotal">—</div>
+          <div class="kpi-sub">in selected period</div>
+        </div>
+        <div class="kpi k-done">
+          <div class="kpi-label">Completed</div>
+          <div class="kpi-val" id="kDone">—</div>
+          <div class="kpi-sub" id="kDoneRate">completion rate</div>
+        </div>
+        <div class="kpi k-wip">
+          <div class="kpi-label">In Progress / Pending</div>
+          <div class="kpi-val" id="kWip">—</div>
+          <div class="kpi-sub">active tasks</div>
+        </div>
+        <div class="kpi k-urgent">
+          <div class="kpi-label">Urgent / TAT</div>
+          <div class="kpi-val" id="kUrgent">—</div>
+          <div class="kpi-sub">need priority</div>
+        </div>
+        <div class="kpi k-creatives">
+          <div class="kpi-label">Total Creatives</div>
+          <div class="kpi-val" id="kCreatives">—</div>
+          <div class="kpi-sub">units requested</div>
+        </div>
+      </div>
+
+      <!-- CHART ROW 1 -->
+      <div class="charts-row">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Weekly Request Trend</span>
+            <div id="trendLeg" class="leg" style="margin:0;margin-bottom:0"></div>
+          </div>
+          <div class="chart-wrap" style="height:210px">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Creative Type Mix</span></div>
+          <div class="chart-wrap" style="height:175px"><canvas id="typeChart"></canvas></div>
+          <div class="leg" id="typeLeg"></div>
+        </div>
+      </div>
+
+      <!-- CHART ROW 2 -->
+      <div class="charts-row2">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Channel Workload</span></div>
+          <div class="chart-wrap" style="height:180px"><canvas id="channelChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Status Breakdown</span></div>
+          <div class="chart-wrap" style="height:180px"><canvas id="statusChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Creatives Per Day</span></div>
+          <div class="chart-wrap" style="height:180px"><canvas id="dailyChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- DESIGNER PERFORMANCE -->
+      <div class="perf-grid">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Designer Performance</span></div>
+          <div class="chart-wrap" style="height:190px"><canvas id="perfChart"></canvas></div>
+        </div>
+        <div class="top-card">
+          <div class="top-badge">Top Performer</div>
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+            <div class="top-avatar" id="topAvatar">?</div>
+            <div>
+              <div style="font-size:18px;font-weight:700;letter-spacing:-.5px" id="topName">—</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono)" id="topSub">Loading...</div>
+            </div>
+          </div>
+          <div id="topStats"></div>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="tbl-card">
+        <div class="tbl-head">
+          <span class="tbl-head-title">All Requests</span>
+          <div class="tbl-count" id="tblCount">0 requests</div>
+        </div>
+        <div class="tbl-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Requested By</th>
+                <th>Channel</th>
+                <th>Creative Type</th>
+                <th>No. of Creatives</th>
+                <th>Sizes</th>
+                <th>Topic</th>
+                <th>When Needed</th>
+                <th>Designer</th>
+                <th>Status</th>
+                <th>TAT</th>
+                <th>Urgent?</th>
+              </tr>
+            </thead>
+            <tbody id="tblBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+// ─── CONFIG ────────────────────────────────────────────────
+const SHEET_ID = '19DiDmBNDEyIpyPA8VJMpw-6zQ-ewXtRDdUOa4EKlX3o';
+const GVZ = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+
+// Column index map (0-based) — matches your exact sheet structure
+const COL = {
+  timestamp: 0,       // Timestamp
+  requester: 1,       // Your Name
+  channel: 2,         // Channel Name
+  creativeType: 3,    // Creative Type
+  numCreatives: 4,    // Number Of Creative
+  sizes: 5,           // Sizes
+  topicType: 6,       // Topics Types
+  mailSubject: 7,     // Mail Subject Line
+  references: 8,      // References
+  whenNeeded: 9,      // When Needed
+  urgentReason: 10,   // Reason for urgent
+  designer: 11,       // Designer assigned
+  tat: 12,            // When Needed - 2 hours TAT (Mon-Fri)
+  cta: 13,            // CTA - In case of All India Mock
+  status: 14,         // Creative Status
+};
+
+const COLORS = ['#00e5a0','#3d9bff','#ffb347','#b57bee','#00cfc8','#ff6b6b','#ffd93d','#6bcb77'];
+const today = new Date(); today.setHours(0,0,0,0);
+
+let ALL = [];
+let charts = {};
+
+// ─── DATE HELPERS ─────────────────────────────────────────
+document.getElementById('dateLabel').textContent =
+  today.toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+function parseDate(v) {
+  if (!v) return null;
+  if (typeof v === 'string') {
+    // Handle "Date(2026,3,15)" format from GViz
+    const m = v.match(/Date\((\d+),(\d+),(\d+)/);
+    if (m) return new Date(+m[1], +m[2], +m[3]);
+    const d = new Date(v); return isNaN(d) ? null : d;
+  }
+  if (v && v.v) return parseDate(v.v);
+  return null;
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'});
+}
+
+function cellVal(cell) {
+  if (!cell) return '';
+  if (typeof cell.v === 'number' && cell.f) return cell.f;
+  return cell.v != null ? String(cell.v) : '';
+}
+
+// ─── LOAD DATA ────────────────────────────────────────────
+async function loadData() {
+  const btn = document.getElementById('syncBtn');
+  btn.classList.add('busy');
+  document.getElementById('syncIcon').textContent = '⟳';
+  document.getElementById('ldMsg').textContent = 'Fetching from Google Sheets…';
+
+  try {
+    const res = await fetch(GVZ + '&t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const txt = await res.text();
+    const json = JSON.parse(txt.substring(47).slice(0,-2));
+    if (!json.table || !json.table.rows?.length) throw new Error('Empty sheet');
+
+    ALL = json.table.rows
+      .filter(r => r.c && r.c.some(c => c?.v != null))
+      .map((r, i) => {
+        const c = r.c;
+        const get = idx => c[idx] || null;
+        return {
+          idx: i + 1,
+          timestamp: parseDate(get(COL.timestamp)?.v || get(COL.timestamp)?.f),
+          requester: cellVal(get(COL.requester)) || '—',
+          channel: cellVal(get(COL.channel)) || '—',
+          creativeType: cellVal(get(COL.creativeType)) || '—',
+          numCreatives: parseInt(cellVal(get(COL.numCreatives))) || 0,
+          sizes: cellVal(get(COL.sizes)) || '—',
+          topicType: cellVal(get(COL.topicType)) || '—',
+          mailSubject: cellVal(get(COL.mailSubject)) || '—',
+          whenNeeded: parseDate(get(COL.whenNeeded)?.v || get(COL.whenNeeded)?.f) ||
+                      (cellVal(get(COL.whenNeeded)) ? new Date(cellVal(get(COL.whenNeeded))) : null),
+          urgentReason: cellVal(get(COL.urgentReason)) || '',
+          designer: cellVal(get(COL.designer)) || 'Unassigned',
+          tat: cellVal(get(COL.tat)) || '—',
+          cta: cellVal(get(COL.cta)) || '—',
+          status: cellVal(get(COL.status)) || 'Pending',
+        };
+      });
+
+    populateFilters();
+    render();
+    document.getElementById('errBanner').style.display = 'none';
+    document.getElementById('lastSync').textContent = 'Synced ' + new Date().toLocaleTimeString('en-IN');
+    document.getElementById('totalChip').textContent = ALL.length + ' total requests';
+
+  } catch(e) {
+    console.error(e);
+    showError('⚠ Could not load sheet. Make sure: (1) Sheet is public → Share → Anyone with link → Viewer, (2) correct sheet name. Error: ' + e.message);
+    if (!ALL.length) useDemoData();
+  }
+
+  btn.classList.remove('busy');
+  document.getElementById('syncIcon').textContent = '↻';
+  setTimeout(() => {
+    document.getElementById('loader').classList.add('hide');
+    document.getElementById('app').style.display = 'flex';
+  }, 400);
+}
+
+function showError(msg) {
+  const b = document.getElementById('errBanner');
+  b.textContent = msg; b.style.display = 'block';
+}
+
+function useDemoData() {
+  const d = n => { const x = new Date(today); x.setDate(x.getDate()-n); return x; };
+  ALL = [
+    {idx:1,timestamp:d(5),requester:'Rahul Gupta',channel:'YouTube',creativeType:'Thumbnail',numCreatives:5,sizes:'1280x720',topicType:'Mock Test',mailSubject:'SSC Mock Series',whenNeeded:d(-1),urgentReason:'',designer:'Priya Sharma',tat:'2 hrs',cta:'',status:'Completed'},
+    {idx:2,timestamp:d(4),requester:'Sneha R',channel:'Instagram',creativeType:'Story Ad',numCreatives:3,sizes:'1080x1920',topicType:'Offer',mailSubject:'Diwali Sale',whenNeeded:d(1),urgentReason:'Campaign live tomorrow',designer:'Arjun Das',tat:'2 hrs',cta:'',status:'Urgent'},
+    {idx:3,timestamp:d(3),requester:'Amit K',channel:'Facebook',creativeType:'Banner',numCreatives:4,sizes:'1200x628',topicType:'Branding',mailSubject:'Q1 Campaign',whenNeeded:d(2),urgentReason:'',designer:'Priya Sharma',tat:'—',cta:'',status:'In Progress'},
+    {idx:4,timestamp:d(2),requester:'Neha S',channel:'YouTube',creativeType:'Thumbnail',numCreatives:8,sizes:'1280x720',topicType:'All India Mock',mailSubject:'UPSC AIM',whenNeeded:d(0),urgentReason:'',designer:'Rahul Verma',tat:'2 hrs',cta:'Register Now',status:'Completed'},
+    {idx:5,timestamp:d(1),requester:'Vikas M',channel:'App',creativeType:'Push Banner',numCreatives:2,sizes:'720x300',topicType:'Notification',mailSubject:'Daily Quiz',whenNeeded:d(3),urgentReason:'',designer:'Arjun Das',tat:'—',cta:'',status:'Pending'},
+    {idx:6,timestamp:d(1),requester:'Pooja T',channel:'Email',creativeType:'Newsletter',numCreatives:1,sizes:'600px wide',topicType:'Monthly Digest',mailSubject:'April Newsletter',whenNeeded:d(1),urgentReason:'',designer:'Priya Sharma',tat:'—',cta:'',status:'Completed'},
+    {idx:7,timestamp:d(0),requester:'Rohit V',channel:'Instagram',creativeType:'Reel Cover',numCreatives:6,sizes:'1080x1080',topicType:'Tips',mailSubject:'Study Tips',whenNeeded:d(2),urgentReason:'Trending topic',designer:'Rahul Verma',tat:'2 hrs',cta:'',status:'Urgent'},
+  ];
+  showError('⚠ Showing demo data — sheet not public yet. Go to Share → Anyone with link → Viewer, then click Sync.');
+  populateFilters(); render();
+}
+
+// ─── FILTERS ──────────────────────────────────────────────
+function populateFilters() {
+  const fillSel = (id, key) => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    const first = sel.options[0].outerHTML;
+    sel.innerHTML = first;
+    [...new Set(ALL.map(t => t[key]).filter(Boolean))].sort()
+      .forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+    if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+  };
+  fillSel('fDesigner','designer');
+  fillSel('fChannel','channel');
+  fillSel('fType','creativeType');
+  fillSel('fStatus','status');
+}
+
+function filterData() {
+  const d = document.getElementById('fDesigner').value;
+  const ch = document.getElementById('fChannel').value;
+  const tp = document.getElementById('fType').value;
+  const st = document.getElementById('fStatus').value;
+  const p = document.getElementById('fPeriod').value;
+
+  return ALL.filter(t => {
+    if (d && t.designer !== d) return false;
+    if (ch && t.channel !== ch) return false;
+    if (tp && t.creativeType !== tp) return false;
+    if (st && t.status !== st) return false;
+    if (p !== 'all' && t.timestamp) {
+      const cutoff = new Date(today);
+      if (p === 'today') cutoff.setHours(0,0,0,0);
+      else if (p === 'week') cutoff.setDate(cutoff.getDate()-7);
+      else if (p === 'month') cutoff.setDate(cutoff.getDate()-30);
+      if (t.timestamp < cutoff) return false;
+    }
+    return true;
+  });
+}
+
+function resetFilters() {
+  ['fDesigner','fChannel','fType','fStatus'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('fPeriod').value = 'month';
+  render();
+}
+
+['fDesigner','fChannel','fType','fStatus','fPeriod'].forEach(id =>
+  document.getElementById(id).addEventListener('change', render));
+
+// ─── RENDER ───────────────────────────────────────────────
+function destroyCharts() {
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch{} });
+  charts = {};
+}
+
+function render() {
+  const data = filterData();
+  destroyCharts();
+
+  // KPIs
+  const done = data.filter(t => /complet|done/i.test(t.status));
+  const wip = data.filter(t => /pending|progress|wip/i.test(t.status));
+  const urgent = data.filter(t => /urgent/i.test(t.status) || t.urgentReason);
+  const totalCreatives = data.reduce((s,t) => s + (t.numCreatives||0), 0);
+
+  document.getElementById('kTotal').textContent = data.length;
+  document.getElementById('kDone').textContent = done.length;
+  document.getElementById('kDoneRate').textContent = data.length ? Math.round(done.length/data.length*100)+'% rate' : '—';
+  document.getElementById('kWip').textContent = wip.length;
+  document.getElementById('kUrgent').textContent = urgent.length;
+  document.getElementById('kCreatives').textContent = totalCreatives;
+  document.getElementById('filterCount').textContent = data.length + ' / ' + ALL.length + ' rows';
+  document.getElementById('tblCount').textContent = data.length + ' requests';
+
+  renderTable(data);
+  renderTrend(data);
+  renderTypeChart(data);
+  renderChannelChart(data);
+  renderStatusChart(data);
+  renderDailyChart(data);
+  renderPerfChart(data);
+  renderTop(data);
+}
+
+// ─── TABLE ────────────────────────────────────────────────
+function renderTable(data) {
+  const tbody = document.getElementById('tblBody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="12">📭 No requests found for selected filters</td></tr>';
+    return;
+  }
+  const isOverdue = t => t.whenNeeded && t.whenNeeded < today && !/complet|done/i.test(t.status);
+  const isUrgent = t => /urgent/i.test(t.status) || t.urgentReason;
+
+  tbody.innerHTML = data.map(t => {
+    const over = isOverdue(t);
+    const urg = isUrgent(t);
+    const cls = urg ? 'urgent-row' : (t.tat && t.tat !== '—' ? 'tat-row' : '');
+    const st = t.status.replace(/\s+/g,'-');
+    let tatPill = '';
+    if (t.tat && t.tat !== '—') tatPill = `<span class="warn-pill">2hr TAT</span>`;
+    return `<tr class="${cls}">
+      <td style="font-family:var(--mono);color:var(--muted);font-size:10px">${t.idx}</td>
+      <td>${t.requester}</td>
+      <td><span style="font-size:11px;color:var(--muted2)">${t.channel}</span></td>
+      <td><b>${t.creativeType}</b></td>
+      <td style="font-family:var(--mono);text-align:center">${t.numCreatives||'—'}</td>
+      <td class="trunc" style="font-size:11px;color:var(--muted2)">${t.sizes}</td>
+      <td class="trunc" style="font-size:11px">${t.topicType}</td>
+      <td style="font-family:var(--mono);font-size:11px;${over?'color:var(--red)':''}">${fmtDate(t.whenNeeded)}</td>
+      <td style="font-weight:600">${t.designer}</td>
+      <td><span class="badge ${st}">${t.status}</span></td>
+      <td>${tatPill}</td>
+      <td>${urg ? '<span class="late-pill">URGENT</span>' : '<span style="font-size:11px;color:var(--muted)">—</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── CHARTS ───────────────────────────────────────────────
+const chartDefaults = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1d22',titleColor:'#eeecea',bodyColor:'#9a9c9f',borderColor:'rgba(255,255,255,0.06)',borderWidth:1,padding:10}},
+};
+
+function renderTrend(data) {
+  const labels=[], vals=[];
+  for(let i=7;i>=0;i--){
+    const wEnd=new Date(today); wEnd.setDate(wEnd.getDate()-i*7);
+    const wStart=new Date(wEnd); wStart.setDate(wStart.getDate()-6);
+    labels.push('W'+(8-i));
+    vals.push(data.filter(t=>t.timestamp&&t.timestamp>=wStart&&t.timestamp<=wEnd).length);
+  }
+  document.getElementById('trendLeg').innerHTML=`<span class="leg-item"><span class="leg-dot" style="background:#00e5a0"></span>Requests</span>`;
+  charts.trend = new Chart(document.getElementById('trendChart'),{
+    type:'line', data:{labels,datasets:[{data:vals,borderColor:'#00e5a0',backgroundColor:'rgba(0,229,160,0.06)',fill:true,tension:.4,pointRadius:5,pointBackgroundColor:'#00e5a0',pointBorderColor:'#0a0b0d',pointBorderWidth:2,borderWidth:2}]},
+    options:{...chartDefaults,scales:{y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b6e72',stepSize:1,font:{size:11}}},x:{grid:{display:false},ticks:{color:'#6b6e72',font:{size:11}}}}}
+  });
+}
+
+function renderTypeChart(data) {
+  const counts={};
+  data.forEach(t=>{counts[t.creativeType]=(counts[t.creativeType]||0)+1});
+  const labels=Object.keys(counts), vals=Object.values(counts);
+  const colors=labels.map((_,i)=>COLORS[i%COLORS.length]);
+  const total=vals.reduce((a,b)=>a+b,0);
+  document.getElementById('typeLeg').innerHTML=labels.map((l,i)=>`<span class="leg-item"><span class="leg-dot" style="background:${colors[i]}"></span>${l} ${total?Math.round(vals[i]/total*100):0}%</span>`).join('');
+  charts.type = new Chart(document.getElementById('typeChart'),{
+    type:'doughnut', data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:3,borderColor:'#111316'}]},
+    options:{...chartDefaults,cutout:'65%'}
+  });
+}
+
+function renderChannelChart(data) {
+  const counts={};
+  data.forEach(t=>{counts[t.channel]=(counts[t.channel]||0)+1});
+  const labels=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+  const vals=labels.map(l=>counts[l]);
+  charts.channel = new Chart(document.getElementById('channelChart'),{
+    type:'bar', data:{labels,datasets:[{data:vals,backgroundColor:COLORS.map(c=>c+'cc'),borderRadius:5,borderSkipped:false}]},
+    options:{...chartDefaults,scales:{x:{grid:{display:false},ticks:{color:'#6b6e72',font:{size:11}}},y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b6e72',stepSize:1,font:{size:11}}}}}
+  });
+}
+
+function renderStatusChart(data) {
+  const STATUS_COLORS={'Completed':'#00e5a0','Done':'#00e5a0','Pending':'#ffb347','In Progress':'#3d9bff','WIP':'#3d9bff','Urgent':'#b57bee','Rejected':'#ff4f4f'};
+  const counts={};
+  data.forEach(t=>{counts[t.status]=(counts[t.status]||0)+1});
+  const labels=Object.keys(counts);
+  const vals=labels.map(l=>counts[l]);
+  const colors=labels.map(l=>STATUS_COLORS[l]||'#6b6e72');
+  charts.status = new Chart(document.getElementById('statusChart'),{
+    type:'doughnut', data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:3,borderColor:'#111316'}]},
+    options:{...chartDefaults,cutout:'60%',plugins:{...chartDefaults.plugins,legend:{display:true,position:'right',labels:{color:'#9a9c9f',font:{size:10},boxWidth:10,padding:8}}}}
+  });
+}
+
+function renderDailyChart(data) {
+  const counts={};
+  data.forEach(t=>{
+    if(!t.timestamp) return;
+    const k=t.timestamp.toLocaleDateString('en-CA');
+    counts[k]=(counts[k]||0)+(t.numCreatives||1);
+  });
+  const sorted=Object.keys(counts).sort().slice(-14);
+  const labels=sorted.map(k=>{const d=new Date(k);return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});});
+  const vals=sorted.map(k=>counts[k]);
+  charts.daily = new Chart(document.getElementById('dailyChart'),{
+    type:'bar', data:{labels,datasets:[{data:vals,backgroundColor:'rgba(0,207,200,0.5)',borderColor:'#00cfc8',borderWidth:1,borderRadius:3,borderSkipped:false}]},
+    options:{...chartDefaults,scales:{x:{grid:{display:false},ticks:{color:'#6b6e72',font:{size:9},maxRotation:45}},y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b6e72',stepSize:1,font:{size:11}}}}}
+  });
+}
+
+function renderPerfChart(data) {
+  const designers=[...new Set(data.map(t=>t.designer).filter(d=>d&&d!=='Unassigned'))];
+  const completed=designers.map(d=>data.filter(t=>t.designer===d&&/complet|done/i.test(t.status)).length);
+  const total=designers.map(d=>data.filter(t=>t.designer===d).length);
+  charts.perf = new Chart(document.getElementById('perfChart'),{
+    type:'bar',
+    data:{
+      labels:designers.map(d=>d.split(' ')[0]),
+      datasets:[
+        {label:'Completed',data:completed,backgroundColor:'rgba(0,229,160,0.7)',borderRadius:4,borderSkipped:false},
+        {label:'Total',data:total,backgroundColor:'rgba(61,155,255,0.3)',borderRadius:4,borderSkipped:false},
+      ]
+    },
+    options:{...chartDefaults,indexAxis:'y',plugins:{...chartDefaults.plugins,legend:{display:true,position:'top',labels:{color:'#9a9c9f',font:{size:10},boxWidth:10,padding:12}}},scales:{x:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.04)'},ticks:{stepSize:1,color:'#6b6e72',font:{size:11}}},y:{grid:{display:false},ticks:{color:'#9a9c9f',font:{size:12}}}}}
+  });
+}
+
+function renderTop(data) {
+  const designers=[...new Set(data.map(t=>t.designer).filter(d=>d&&d!=='Unassigned'))];
+  let best=null,bestC=0;
+  designers.forEach(d=>{
+    const c=data.filter(t=>t.designer===d&&/complet|done/i.test(t.status)).length;
+    if(c>bestC){bestC=c;best=d}
+  });
+  if(!best){document.getElementById('topName').textContent='—';document.getElementById('topSub').textContent='No data';document.getElementById('topStats').innerHTML='';return}
+  document.getElementById('topAvatar').textContent=best.split(' ').map(n=>n[0]).join('').slice(0,2);
+  document.getElementById('topName').textContent=best;
+  const dt=data.filter(t=>t.designer===best);
+  const dc=dt.filter(t=>/complet|done/i.test(t.status));
+  const urg=dt.filter(t=>/urgent/i.test(t.status)).length;
+  const totalC=dt.reduce((s,t)=>s+(t.numCreatives||0),0);
+  document.getElementById('topSub').textContent=bestC+' completed — top this period';
+  document.getElementById('topStats').innerHTML=[
+    ['Total assigned',dt.length],
+    ['Total creatives',totalC],
+    ['Completion rate',dt.length?Math.round(dc.length/dt.length*100)+'%':'—'],
+    ['Urgent handled',urg],
+  ].map(([l,v])=>`<div class="stat-r"><span class="sl">${l}</span><span class="sv">${v}</span></div>`).join('');
+}
+
+// ─── BOOT ─────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>

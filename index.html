@@ -332,7 +332,7 @@ tr:hover td{background:var(--bg3)}
 </div>
 
 <script>
-const SHEET_ID='1iLf4gxgyYMoqszKmk_f0XKCwsRyqlX3W5H4dQJpF3rs';
+const SHEET_ID='19DiDmBNDEyIpyPA8VJMpw-6zQ-ewXtRDdUOa4EKlX3o';
 const GVZ=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
 const COL={timestamp:0,requester:1,channel:2,creativeType:3,numCreatives:4,sizes:5,topicType:6,mailSubject:7,references:8,whenNeeded:9,urgentReason:10,designer:11,tat:12,cta:13,status:14};
 const COLORS=['#00e5a0','#3d9bff','#ffb347','#b57bee','#00cfc8','#ff6b6b','#ffd93d','#6bcb77','#ff9f43','#a29bfe'];
@@ -387,7 +387,7 @@ async function loadData(){
     if(!json.table||!json.table.rows?.length)throw new Error('Empty or not public');
     ALL=json.table.rows.filter(r=>r.c&&r.c.some(c=>c?.v!=null)).map((r,i)=>{
       const c=r.c,g=idx=>c[idx]||null;
-      return{idx:i+1,timestamp:parseDate(g(COL.timestamp)?.v||g(COL.timestamp)?.f),requester:cellVal(g(COL.requester))||'—',channel:cellVal(g(COL.channel))||'—',creativeType:cellVal(g(COL.creativeType))||'—',numCreatives:parseInt(cellVal(g(COL.numCreatives)))||0,sizes:cellVal(g(COL.sizes))||'—',topicType:cellVal(g(COL.topicType))||'—',mailSubject:cellVal(g(COL.mailSubject))||'—',whenNeeded:parseDate(g(COL.whenNeeded)?.v||g(COL.whenNeeded)?.f),urgentReason:cellVal(g(COL.urgentReason))||''designer:cellVal(g(COL.designer))||'Unassigned',tat:cellVal(g(COL.tat))||'',status:cellVal(g(COL.status))||'Pending'};
+      return{idx:i+1,timestamp:parseDate(g(COL.timestamp)?.v||g(COL.timestamp)?.f),requester:cellVal(g(COL.requester))||'—',channel:cellVal(g(COL.channel))||'—',creativeType:cellVal(g(COL.creativeType))||'—',numCreatives:parseInt(cellVal(g(COL.numCreatives)))||0,sizes:cellVal(g(COL.sizes))||'—',topicType:cellVal(g(COL.topicType))||'—',mailSubject:cellVal(g(COL.mailSubject))||'—',whenNeeded:parseDate(g(COL.whenNeeded)?.v||g(COL.whenNeeded)?.f),urgentReason:cellVal(g(COL.urgentReason))||'',designer:cellVal(g(COL.designer))||'Unassigned',tat:cellVal(g(COL.tat))||'',status:cellVal(g(COL.status))||'Pending'};
     });
     popFilters();renderPage();
     document.getElementById('errBanner').style.display='none';
@@ -587,3 +587,6 @@ loadData();
 </script>
 </body>
 </html>
+
+
+isko analise caro or bato isme google sheet ka link kaha daalna h 

@@ -387,36 +387,7 @@ async function loadData(){
     if(!json.table||!json.table.rows?.length)throw new Error('Empty or not public');
     ALL=json.table.rows.filter(r=>r.c&&r.c.some(c=>c?.v!=null)).map((r,i)=>{
       const c=r.c,g=idx=>c[idx]||null;
-      return{idx:i+1,timestamp:parseDate(g(COL.timestamp)?.v||g(COL.timestamp)?.f),requester:cellVal(g(COL.requester))||'—',channel:cellVal(g(COL.channel))||'—',creativeType:cellVal(g(COL.creativeType))||'—',numCreatives:parseInt(cellVal(g(COL.numCreatives)))||0,sizes:cellVal(g(COL.sizes))||'—',topicType:cellVal(g(COL.topicType))||'—',mailSubject:cellVal(g(COL.mailSubject))||'—',whenNeeded:parseDate(g(COL.whenNeeded)?.v||g(COL.whenNeeded)?.f),urgentReason:cellVal(g(COL.urgentReason))||'',function normalizeDesigner(name){
-  if(!name) return 'Unassigned';
-
-  let n = name.toLowerCase().trim();
-
-  // Remove common extra words
-  n = n
-    .replace(/sir/g, '')
-    .replace(/mr/g, '')
-    .replace(/team/g, '')
-    .replace(/\+/g, ',')
-    .replace(/&/g, ',')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  // Split multiple names
-  const parts = n.split(',');
-
-  const cleanNames = parts.map(p => {
-    p = p.trim();
-
-    // Take first word only
-    const first = p.split(' ')[0];
-
-    // Capitalize
-    return first.charAt(0).toUpperCase() + first.slice(1);
-  });
-
-  return [...new Set(cleanNames)].join(', ');
-}tat:cellVal(g(COL.tat))||'',status:cellVal(g(COL.status))||'Pending'};
+      return{idx:i+1,timestamp:parseDate(g(COL.timestamp)?.v||g(COL.timestamp)?.f),requester:cellVal(g(COL.requester))||'—',channel:cellVal(g(COL.channel))||'—',creativeType:cellVal(g(COL.creativeType))||'—',numCreatives:parseInt(cellVal(g(COL.numCreatives)))||0,sizes:cellVal(g(COL.sizes))||'—',topicType:cellVal(g(COL.topicType))||'—',mailSubject:cellVal(g(COL.mailSubject))||'—',whenNeeded:parseDate(g(COL.whenNeeded)?.v||g(COL.whenNeeded)?.f),urgentReason:cellVal(g(COL.urgentReason))||''designer:normalizeDesigner(cellVal(g(COL.designer))) || 'Unassigned',tat:cellVal(g(COL.tat))||'',status:cellVal(g(COL.status))||'Pending'};
     });
     popFilters();renderPage();
     document.getElementById('errBanner').style.display='none';
